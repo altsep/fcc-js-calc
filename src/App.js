@@ -8,49 +8,68 @@ function App() {
   const [error, setError] = useState(false);
   const [blink, setBlink] = useState(true);
 
-  const clear = () => {
-    console.clear();
-    setInput("0");
-    setOutput(0);
-    setStore([]);
-    setResult(false);
-    setBlink(true);
-  };
-
-  const backspace = () =>
-    /\s$/.test(input)
-      ? setInput((ps) => ps.slice(0, ps.length - 3))
-      : input.length > 1
-      ? setInput((ps) => ps.slice(0, ps.length - 1))
-      : clear();
-
-  const goBack = () => {
-    if (store.length > 0) {
-      setInput(store[store.length - 1].input);
-      setOutput(store[store.length - 1].output);
-      return setStore((ps) => ps.slice(0, ps.length - 1));
-    } else return clear();
-  };
-
   // calculate using map of functions and switch conditional
-  const calc = (key) => {
-    const regexOperator = /[/*\-+]/;
-    const operators = {
-      "+": (a, b) => a + b,
-      "-": (a, b) => a - b,
-      "*": (a, b) => a * b,
-      "/": (a, b) => a / b,
-    };
-    const count = (str) => {
-      let arr = str.split(" ").map((a) => (/\d+/.test(a) ? +a : a));
-      let val = arr[0];
-      let newArr = arr.slice(1);
-      while (/[+\-*/]/.test(newArr[0])) {
-        val = operators[newArr[0]](val, newArr[1]);
-        newArr.splice(0, 2);
-      }
-      return val;
-    };
+  const regexOperator = /[/*\-+]/;
+
+  const operators = {
+    "+": (a, b) => a + b,
+    "-": (a, b) => a - b,
+    "*": (a, b) => a * b,
+    "/": (a, b) => a / b,
+  };
+
+  const count = (str) => {
+    let arr = str.split(" ").map((a) => (/\d+/.test(a) ? +a : a));
+    let val = arr[0];
+    let newArr = arr.slice(1);
+    while (/[+\-*/]/.test(newArr[0])) {
+      val = operators[newArr[0]](val, newArr[1]);
+      newArr.splice(0, 2);
+    }
+    return val;
+  };
+
+  const onDigit = (key) => {
+    if (!/\s0\d|^0{2,}/.test(input + key))
+      setInput((ps) => (/^0\d/.test(input + key) ? key : ps + key));
+  };
+
+  const onDecimal = (key) => {
+    if (!/\d+\.\d*$|\s$/.test(input)) setInput((ps) => ps + key);
+  };
+
+  const onOperator = (key) => {
+    if (!/^-$/.test(input) && !/[/*\-+]\s-?$|\d\.$/.test(input))
+      setInput((ps) => (ps += ` ${key} `));
+    if (/\s$/.test(input) && key === "-") setInput((ps) => ps + key);
+    else if (input === "0" && key === "-") setInput(key);
+  };
+
+  const onEquals = (key) => {
+    if (/^0\s\/|Infinity\s\//.test(input)) setError(true);
+    else if (/[\d.]$/.test(input)) {
+      result === true &&
+        setInput(
+          input.replace(/^-?\d+\.?\d*(e[+-])?\d*(?=\s)/, String(output))
+        );
+      setOutput((ps) =>
+        result === true && regexOperator.test(input)
+          ? count(input.replace(/^-?\d+\.?\d*(e[+-])?\d*(?=\s)/, ps))
+          : count(input)
+      );
+      result === true &&
+        setStore((ps) =>
+          ps.length !== 0 && input.split(" ")[0] === String(output)
+            ? ps
+            : [...ps, { input, output }]
+        );
+      if (regexOperator.test(input)) setResult(true);
+    } else setError(true);
+  };
+
+  const handleClick = (e) => onKey(e, e.target.innerHTML);
+
+  const onKey = (e, key = e.key.toLowerCase()) => {
     switch (key) {
       case "0":
       case "1":
@@ -62,44 +81,25 @@ function App() {
       case "7":
       case "8":
       case "9":
-        if (!/\s0\d|^0{2,}/.test(input + key))
-          setInput((ps) => (/^0\d/.test(input + key) ? key : ps + key));
-        break;
+        return onDigit(key);
       case ".":
-        setInput((ps) => (!/\d+\.\d*$|\s$/.test(input) ? ps + "." : ps));
-        break;
+        return onDecimal(key);
       case "/":
       case "*":
       case "-":
       case "+":
-        if (!/^-$/.test(input))
-          setInput((ps) =>
-            !/[/*\-+]\s-?$|\d\.$/.test(input) ? (ps += ` ${key} `) : ps
-          );
-        if (/\s$/.test(input) && key === "-") setInput((ps) => ps + key);
-        else if (input === "0" && key === "-") setInput(key);
-        break;
+        return onOperator(key);
       case "=":
-        if (/^0\s\/|Infinity\s\//.test(input)) setError(true);
-        else if (/[\d.]$/.test(input)) {
-          result === true &&
-            setInput(
-              input.replace(/^-?\d+\.?\d*(e[+-])?\d*(?=\s)/, String(output))
-            );
-          setOutput((ps) =>
-            result === true && regexOperator.test(input)
-              ? count(input.replace(/^-?\d+\.?\d*(e[+-])?\d*(?=\s)/, ps))
-              : count(input)
-          );
-          result === true &&
-            setStore((ps) =>
-              ps.length !== 0 && input.split(" ")[0] === String(output)
-                ? ps
-                : [...ps, { input, output }]
-            );
-          if (regexOperator.test(input)) setResult(true);
-        } else setError(true);
-        break;
+        return onEquals(key);
+      case "backspace":
+        return backspace();
+      case "escape":
+      case "delete":
+      case "c":
+      case "с":
+        return clear();
+      case "b":
+        return goBack();
       case "shift":
         return null;
       default:
@@ -107,30 +107,12 @@ function App() {
     }
   };
 
-  const handleClick = (e) => calc(e.target.innerHTML);
-
-  const onKeyDown = (e) => {
-    const key = e.key.toLowerCase();
-    switch (key) {
-      case "backspace":
-        return backspace();
-      case "delete":
-      case "c":
-      case "с":
-        return clear();
-      case "b":
-        return goBack();
-      default:
-        return calc(key);
-    }
-  };
-
   useEffect(() => {
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keydown", onKey);
     };
-  }, [input, output, result, onKeyDown]);
+  }, [input, output, result, onKey]);
 
   useEffect(() => setError(false), [input, output]);
 
@@ -157,6 +139,32 @@ function App() {
       : str;
   };
 
+  // utility functions
+  const clear = () => {
+    console.clear();
+    setInput("0");
+    setOutput(0);
+    setStore([]);
+    setResult(false);
+    setBlink(true);
+  };
+
+  const backspace = () =>
+    /\s$/.test(input)
+      ? setInput((ps) => ps.slice(0, ps.length - 3))
+      : input.length > 1
+      ? setInput((ps) => ps.slice(0, ps.length - 1))
+      : clear();
+
+  const goBack = () => {
+    if (store.length > 0) {
+      setInput(store[store.length - 1].input);
+      setOutput(store[store.length - 1].output);
+      return setStore((ps) => ps.slice(0, ps.length - 1));
+    } else return clear();
+  };
+
+  // cosmetic
   const blinkRef = useRef(false);
 
   useEffect(
@@ -179,15 +187,10 @@ function App() {
             {input === "0" && result === false ? "_" : addSpaces(input)}
           </p>
           <p className="border-t pt-2">
-            {
-              result === true &&
-                // addSpaces(output)
-                addSpaces(output.toFixed(4))
-              // addSpaces(Math.round(output * 1e4) / 1e4)
-            }
+            {result === true && addSpaces(output.toFixed(4))}
           </p>
         </div>
-        <div className="controlpad grid gap-2 grid-cols-3 px-4">
+        <div className="grid gap-2 grid-cols-3 px-4">
           <div
             className="p-2 text-2xl font-thin bg-red-700 bg-opacity-20 hover:bg-opacity-50 active:-mb-0.5 active:shadow active:mt-0.5 border flex justify-center items-center col-span-2"
             id="clear"
@@ -203,28 +206,28 @@ function App() {
             ←
           </div>
           <div
-            className="oper p-2 text-2xl font-thin bg-gray-200 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 border flex justify-center items-center"
+            className="p-2 text-2xl font-thin bg-gray-200 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 border flex justify-center items-center"
             id="add"
             onClick={handleClick}
           >
             +
           </div>
           <div
-            className="oper p-2 text-2xl font-thin bg-gray-200 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 border flex justify-center items-center"
+            className="p-2 text-2xl font-thin bg-gray-200 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 border flex justify-center items-center"
             id="multiply"
             onClick={handleClick}
           >
             *
           </div>
           <div
-            className="oper p-2 text-2xl font-thin bg-gray-200 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 border flex justify-center items-center col-start-1"
+            className="p-2 text-2xl font-thin bg-gray-200 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 border flex justify-center items-center col-start-1"
             id="substract"
             onClick={handleClick}
           >
             -
           </div>
           <div
-            className="oper p-2 text-2xl font-thin bg-gray-200 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 border flex justify-center items-center col-start-2"
+            className="p-2 text-2xl font-thin bg-gray-200 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 border flex justify-center items-center col-start-2"
             id="divide"
             onClick={handleClick}
           >
@@ -240,63 +243,63 @@ function App() {
         </div>
         <div className="px-4 grid gap-2 grid-cols-3 pt-2 pb-12" id="numpad">
           <div
-            className="num flex justify-center items-center bg-gray-100 hover:bg-gray-300 border text-3xl font-normal"
+            className="flex justify-center items-center bg-gray-100 hover:bg-gray-300 border text-3xl font-normal"
             id="nine"
             onClick={handleClick}
           >
             9
           </div>
           <div
-            className="num flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
+            className="flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
             id="eight"
             onClick={handleClick}
           >
             8
           </div>
           <div
-            className="num flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
+            className="flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
             id="seven"
             onClick={handleClick}
           >
             7
           </div>
           <div
-            className="num flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
+            className="flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
             id="six"
             onClick={handleClick}
           >
             6
           </div>
           <div
-            className="num flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
+            className="flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
             id="five"
             onClick={handleClick}
           >
             5
           </div>
           <div
-            className="num flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
+            className="flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
             id="four"
             onClick={handleClick}
           >
             4
           </div>
           <div
-            className="num flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
+            className="flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
             id="three"
             onClick={handleClick}
           >
             3
           </div>
           <div
-            className="num flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
+            className="flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
             id="two"
             onClick={handleClick}
           >
             2
           </div>
           <div
-            className="num flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
+            className="flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal"
             id="one"
             onClick={handleClick}
           >
@@ -310,7 +313,7 @@ function App() {
             Back
           </div>
           <div
-            className="num flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal col-start-2"
+            className="flex justify-center items-center bg-gray-100 hover:bg-gray-300 active:-mb-0.5 active:shadow active:mt-0.5 h-16 border text-3xl font-normal col-start-2"
             id="zero"
             onClick={handleClick}
           >

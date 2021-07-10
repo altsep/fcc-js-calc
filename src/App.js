@@ -83,7 +83,6 @@ function App() {
         if (/^0\s\/|Infinity\s\//.test(input)) setError(true);
         else if (/[\d.]$/.test(input)) {
           result === true &&
-            // output !== Infinity &&
             setInput(
               input.replace(/^-?\d+\.?\d*(e[+-])?\d*(?=\s)/, String(output))
             );
@@ -164,8 +163,6 @@ function App() {
     () => (blinkRef.current ? setBlink(false) : (blinkRef.current = true)),
     [input]
   );
-
-  useEffect(() => console.log(input), [input])
 
   return (
     <div className="flex flex-col items-center" id="main">

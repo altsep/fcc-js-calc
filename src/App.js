@@ -67,8 +67,6 @@ function App() {
     } else setError(true);
   };
 
-  const handleClick = (e) => onKey(e, e.target.innerHTML);
-
   const onKey = (e, key = e.key.toLowerCase()) => {
     switch (key) {
       case "0":
@@ -147,7 +145,7 @@ function App() {
     setStore([]);
     setResult(false);
     setBlink(true);
-    blinkRef.current = false
+    blinkRef.current = false;
   };
 
   const backspace = () =>
@@ -164,6 +162,8 @@ function App() {
       return setStore((ps) => ps.slice(0, ps.length - 1));
     } else return clear();
   };
+
+  const handleClick = (e) => onKey(e, e.target.innerHTML);
 
   // cosmetic
   const blinkRef = useRef(false);

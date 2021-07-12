@@ -147,7 +147,6 @@ function App() {
     setStore([]);
     setResult(false);
     setBlink(true);
-    blinkRef.current = false
   };
 
   const backspace = () =>

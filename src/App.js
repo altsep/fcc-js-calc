@@ -67,6 +67,7 @@ function App() {
     } else setError(true);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const onKey = (e, key = e.key.toLowerCase()) => {
     switch (key) {
       case "0":

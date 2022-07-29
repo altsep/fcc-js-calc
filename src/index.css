@@ -3,15 +3,16 @@
 @tailwind utilities;
 
 .blink {
-  animation: blink-animation 1s steps(2, start) both infinite;
+  animation: blink 1s steps(2, start) both infinite;
 }
 
-@keyframes blink-animation {
+@keyframes blink {
   to {
     visibility: hidden;
   }
 }
-@-webkit-keyframes blink-animation {
+
+@-webkit-keyframes blink {
   to {
     visibility: hidden;
   }

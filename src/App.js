@@ -178,7 +178,7 @@ function App() {
     <div className="flex flex-col items-center" id="main">
       <div
         className="flex flex-col m-6 border-2 
-        select-none font-sans text-lg rounded-lg w-11/12 xs:w-5/6 sm:w-96"
+        select-none font-sans text-lg rounded-lg overflow-hidden w-11/12 xs:w-5/6 sm:w-96"
         id="calc"
       >
         <div
